@@ -251,3 +251,130 @@ consistent variable names before combining the data. I rounded Mr. Trash
 Wheel’s sports ball counts to the nearest integer and converted them to
 integers. Professor Trash Wheel collected a total of 282.26 tons of
 trash. Gwynnda collected 18,120 cigarette butts in June 2022.
+
+# Problem 3
+
+``` r
+mci_baseline <- read_csv(
+  "Data/data_mci/MCI_baseline.csv",
+  skip = 1,
+  na = c("", ".", "NA"),
+  show_col_types = FALSE
+) |>
+  rename(
+    id = ID,
+    baseline_age = `Current Age`,
+    sex = Sex,
+    education = Education,
+    mci_onset_age = `Age at onset`
+  ) |>
+  filter(
+    is.na(mci_onset_age) | mci_onset_age > baseline_age
+  ) |>
+  mutate(
+    sex = factor(sex, levels = c(0, 1), labels = c("Female", "Male")),
+    apoe4 = factor(apoe4, levels = c(0, 1),
+                   labels = c("Non-carrier", "Carrier")),
+    developed_mci = !is.na(mci_onset_age)
+  )
+```
+
+``` r
+mci_baseline |>
+  summarise(
+    n_participants = n(),
+    n_developed_mci = sum(developed_mci),
+    average_baseline_age = mean(baseline_age),
+    proportion_women_apoe4_carriers =
+      mean(apoe4[sex == "Female"] == "Carrier")
+  )
+```
+
+    ## # A tibble: 1 × 4
+    ##   n_participants n_developed_mci average_baseline_age proportion_women_apoe4_c…¹
+    ##            <int>           <int>                <dbl>                      <dbl>
+    ## 1            479              93                 65.0                        0.3
+    ## # ℹ abbreviated name: ¹​proportion_women_apoe4_carriers
+
+``` r
+mci_amyloid <- read_csv(
+  "Data/data_mci/mci_amyloid.csv",
+  skip = 1,
+  na = c("", "NA"),
+  show_col_types = FALSE
+) |>
+  rename(id = `Study ID`) |>
+  pivot_longer(
+    cols = -id,
+    names_to = "time",
+    values_to = "amyloid_42_40"
+  ) |>
+  mutate(
+    time = case_when(
+      time == "Baseline" ~ 0,
+      TRUE ~ readr::parse_number(time)
+    )
+  )
+```
+
+``` r
+baseline_only <- anti_join(
+  mci_baseline |> distinct(id),
+  mci_amyloid |> distinct(id),
+  by = "id"
+)
+
+amyloid_only <- anti_join(
+  mci_amyloid |> distinct(id),
+  mci_baseline |> distinct(id),
+  by = "id"
+)
+
+nrow(baseline_only)
+```
+
+    ## [1] 8
+
+``` r
+nrow(amyloid_only)
+```
+
+    ## [1] 16
+
+``` r
+mci_combined <- inner_join(
+  mci_baseline,
+  mci_amyloid,
+  by = "id"
+)
+
+mci_combined |>
+  summarise(
+    n_participants = n_distinct(id),
+    n_rows = n()
+  )
+```
+
+    ## # A tibble: 1 × 2
+    ##   n_participants n_rows
+    ##            <int>  <int>
+    ## 1            471   2355
+
+``` r
+write_csv(
+  mci_combined,
+  "Data/data_mci/mci_combined.csv"
+)
+```
+
+After excluding four participants whose recorded age of MCI onset was at
+or before their baseline age, the cleaned baseline dataset included 479
+participants. Of these, 93 developed MCI during follow-up. The average
+baseline age was 65.03 years. Among the 210 women in the study, 63 were
+APOE4 carriers (30.0%). The longitudinal amyloid dataset contains
+measurements at baseline and years 2, 4, 6, and 8. Eight participants in
+the cleaned baseline data did not appear in the amyloid data, and 16
+participants in the amyloid data did not appear in the cleaned baseline
+data. An inner join retained 471 participants and produced 2,355
+participant-time observations. The combined dataset was exported to
+`Data/data_mci/mci_combined.csv`.
