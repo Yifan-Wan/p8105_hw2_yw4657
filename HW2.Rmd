@@ -1,0 +1,7 @@
+---
+title: "HW2"
+author: "Yifan Wan"
+date: "2026-10-01"
+output: github_document
+---
+
