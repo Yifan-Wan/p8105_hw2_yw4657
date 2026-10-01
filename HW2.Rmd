@@ -86,3 +86,4 @@ a_stations |>
   )
 ```
 
+The cleaned dataset contains 1,868 rows and 19 columns. Each row represents a subway station entrance or exit. The variables include the subway line and station name, station latitude and longitude, the routes served, whether entry is allowed, vending availability, entrance type, and ADA compliance. I selected the variables needed for the analysis, treated blank values as missing, and converted entry from “YES”/“NO” to a logical variable. I identified stations using both line and station name, yielding 465 distinct stations. Of these, 84 are ADA compliant. Among entrances without vending machines, 37.7% allow entry. The original cleaned dataset is not fully tidy because routes are stored across multiple columns (Route1–Route11). I pivoted those columns into route number and route name variables; using that longer dataset, I found that 60 distinct stations serve the A train, of which 17 are ADA compliant.
