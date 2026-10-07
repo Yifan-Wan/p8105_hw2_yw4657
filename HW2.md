@@ -128,12 +128,32 @@ compliant.
 # Problem 2
 
 ``` r
-trash_wheel_file <- "Data/202509 Trash Wheel Collection Data.xlsx"
+trash_wheel_file <- "Data/202610 Trash Wheel Collection Data.xlsx"
+
+numeric_vars <- c(
+  "dumpster", "year", "weight_tons", "volume_cubic_yards",
+  "plastic_bottles", "polystyrene", "cigarette_butts",
+  "glass_bottles", "plastic_bags", "wrappers",
+  "sports_balls", "homes_powered"
+)
+
+clean_trash_wheel <- function(data, wheel_name) {
+  data |>
+    mutate(
+      across(
+        any_of(numeric_vars),
+        ~ readr::parse_number(as.character(.x))
+      ),
+      dumpster = as.integer(dumpster),
+      year = as.integer(year),
+      trash_wheel = wheel_name
+    )
+}
 
 mr_trash_wheel <- read_excel(
   trash_wheel_file,
   sheet = "Mr. Trash Wheel",
-  range = "A2:N709"
+  range = "A2:N742"
 ) |>
   rename(
     dumpster = Dumpster,
@@ -151,15 +171,16 @@ mr_trash_wheel <- read_excel(
     sports_balls = `Sports Balls`,
     homes_powered = `Homes Powered*`
   ) |>
+  clean_trash_wheel("Mr. Trash Wheel") |> 
   mutate(
-    sports_balls = as.integer(round(sports_balls)),
-    trash_wheel = "Mr. Trash Wheel"
+    sports_balls = as.integer(round(sports_balls))
   )
 
 professor_trash_wheel <- read_excel(
   trash_wheel_file,
   sheet = "Professor Trash Wheel",
-  range = "A2:M134"
+  range = "A2:M139",
+  na = c("", "dive")
 ) |>
   rename(
     dumpster = Dumpster,
@@ -176,12 +197,12 @@ professor_trash_wheel <- read_excel(
     wrappers = Wrappers,
     homes_powered = `Homes Powered*`
   ) |>
-  mutate(trash_wheel = "Professor Trash Wheel")
+  clean_trash_wheel("Professor Trash Wheel")
 
 gwynnda_trash_wheel <- read_excel(
   trash_wheel_file,
-  sheet = "Gwynns Falls Trash Wheel",
-  range = "A2:L351"
+  sheet = "Gwynnda the Good Wheel of the W",
+  range = "A2:L394"
 ) |>
   rename(
     dumpster = Dumpster,
@@ -197,16 +218,7 @@ gwynnda_trash_wheel <- read_excel(
     wrappers = Wrappers,
     homes_powered = `Homes Powered*`
   ) |>
-  mutate(trash_wheel = "Gwynnda")
-
-mr_trash_wheel <- mr_trash_wheel |>
-  mutate(year = as.integer(readr::parse_number(as.character(year))))
-
-professor_trash_wheel <- professor_trash_wheel |>
-  mutate(year = as.integer(readr::parse_number(as.character(year))))
-
-gwynnda_trash_wheel <- gwynnda_trash_wheel |>
-  mutate(year = as.integer(readr::parse_number(as.character(year))))
+  clean_trash_wheel("Gwynnda")
 
 trash_wheel_df <- bind_rows(
   mr_trash_wheel,
@@ -218,7 +230,7 @@ trash_wheel_df <- bind_rows(
 nrow(trash_wheel_df)
 ```
 
-    ## [1] 1188
+    ## [1] 1269
 
 ``` r
 professor_trash_wheel |>
@@ -228,7 +240,7 @@ professor_trash_wheel |>
     ## # A tibble: 1 × 1
     ##   total_weight_tons
     ##               <dbl>
-    ## 1              282.
+    ## 1              295.
 
 ``` r
 gwynnda_trash_wheel |>
@@ -241,7 +253,7 @@ gwynnda_trash_wheel |>
     ##                   <dbl>
     ## 1                 18120
 
-The combined dataset contains 1,188 observations. Each observation
+The combined dataset contains 1,269 observations. Each observation
 represents a dumpster collection and includes variables such as the
 Trash Wheel, dumpster number, collection date, weight, volume, and the
 amounts of different types of trash collected. I imported the Mr. Trash
@@ -249,8 +261,10 @@ Wheel, Professor Trash Wheel, and Gwynnda worksheets, excluded summary
 rows and note columns by specifying ranges in `read_excel()`, and used
 consistent variable names before combining the data. I rounded Mr. Trash
 Wheel’s sports ball counts to the nearest integer and converted them to
-integers. Professor Trash Wheel collected a total of 282.26 tons of
-trash. Gwynnda collected 18,120 cigarette butts in June 2022.
+integers. One text extry in the Professor Trash Wheel’s plastic bottle
+count was treated as missing. Professor Trash Wheel collected a total of
+295.96 tons of trash. Gwynnda collected 18,120 cigarette butts in June
+2022.
 
 # Problem 3
 
